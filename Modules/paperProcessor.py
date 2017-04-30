@@ -56,8 +56,7 @@ def __find_border(img, top_right, top_left, bottom_right, bottom_left):
         "bottom_left": bottom_left
     }
 
-def main():
-    target_pdf = sys.argv[1]
+def load_paper(target_pdf):
     gs_args = ["-q", "-dNOPAUSE", "-dBATCH", "-dNOPROMPT", "-dNOSAFER", "-sDEVICE=png16m", "-sOutputFile=" + PROCESSED_IMG_PATH +"/target_img-%d.png", target_pdf]
     ghostscript.Ghostscript(*gs_args)
 
@@ -67,8 +66,6 @@ def main():
     top_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_LEFT)
     bottom_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_RIGHT)
     bottom_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_LEFT)
-
-
 
     corner_symbols = __extract_border_marker(top_right, top_left, bottom_right, bottom_left)
 
@@ -86,4 +83,3 @@ def main():
 
     cv2.imwrite('./image_marked.png', img_rgb)
     cv2.imwrite('./image_processed.png', img)
-main()
