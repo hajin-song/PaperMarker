@@ -25,3 +25,11 @@ An easier process
 - [ ] Read student number bubbles
 - [ ] Smooth minimum functioning program (details need adding)
 - [ ] Documentation and Diagrams (details need adding)
+
+---
+
+## Dependencies
+
+- Python 2.7.12 ([Ghostscript sadness](http://stackoverflow.com/questions/42655222/typeerror-when-importing-ghostscript-on-python))
+- [Ghostscript](https://www.ghostscript.com/)
+- [Pillow](https://python-pillow.org/)
