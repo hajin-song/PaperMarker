@@ -1,35 +1,35 @@
-import sys
 from Tkinter import *
-import ttk
+from tkFileDialog import askopenfilename
+from PIL import Image, ImageTk
 
-root = Tk()
+if __name__ == "__main__":
+    root = Tk()
 
-content = ttk.Frame(root)
-frame = ttk.Frame(content, borderwidth=5, relief="sunken", width=200, height=100)
-namelbl = ttk.Label(content, text="Name")
-name = ttk.Entry(content)
+    #setting up a tkinter canvas with scrollbars
+    frame = Frame(root, bd=2, relief=SUNKEN)
+    frame.grid_rowconfigure(0, weight=1)
+    frame.grid_columnconfigure(0, weight=1)
+    xscroll = Scrollbar(frame, orient=HORIZONTAL)
+    xscroll.grid(row=1, column=0, sticky=E+W)
+    yscroll = Scrollbar(frame)
+    yscroll.grid(row=0, column=1, sticky=N+S)
+    canvas = Canvas(frame, bd=0, xscrollcommand=xscroll.set, yscrollcommand=yscroll.set)
+    canvas.grid(row=0, column=0, sticky=N+S+E+W)
+    xscroll.config(command=canvas.xview)
+    yscroll.config(command=canvas.yview)
+    frame.pack(fill=BOTH,expand=1)
 
-onevar = BooleanVar()
-twovar = BooleanVar()
-threevar = BooleanVar()
-onevar.set(True)
-twovar.set(False)
-threevar.set(True)
+    #adding the image
+    File = askopenfilename(parent=root, initialdir="C:/",title='Choose an image.')
+    img = ImageTk.PhotoImage(Image.open(File))
+    canvas.create_image(0,0,image=img,anchor="nw")
+    canvas.config(scrollregion=canvas.bbox(ALL))
 
-one = ttk.Checkbutton(content, text="One", variable=onevar, onvalue=True)
-two = ttk.Checkbutton(content, text="Two", variable=twovar, onvalue=True)
-three = ttk.Checkbutton(content, text="Three", variable=threevar, onvalue=True)
-ok = ttk.Button(content, text="Okay")
-cancel = ttk.Button(content, text="Cancel")
+    #function to be called when mouse is clicked
+    def printcoords(event):
+        #outputting x and y coords to console
+        print (event.x,event.y)
+    #mouseclick event
+    canvas.bind("<Button 1>",printcoords)
 
-content.grid(column=0, row=0)
-frame.grid(column=0, row=0, columnspan=3, rowspan=2)
-namelbl.grid(column=3, row=0, columnspan=2)
-name.grid(column=3, row=1, columnspan=2)
-one.grid(column=0, row=3)
-two.grid(column=1, row=3)
-three.grid(column=2, row=3)
-ok.grid(column=3, row=3)
-cancel.grid(column=4, row=3)
-
-root.mainloop()
+    root.mainloop()

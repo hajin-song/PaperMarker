@@ -1,76 +1,125 @@
 import sys
 from Tkinter import *
-import ttk
 from Modules import paperProcessor
+from PIL import Image, ImageTk
+from tkFileDialog import askopenfilename
+
+from TKinterModules.Frames.Actions import ActionFrame
+from TKinterModules.Frames.MenuCalibrate import MenuCalibrationFrame
+from TKinterModules.Frames.MenuMark import MenuMarkFrame
+from TKinterModules.Frames.Navigation import Navigation
+
+from TKinterModules.Components.PageView import PageView
 
 APP_DIVIDER_LINE_WIDTH = 5
 
+Frame = LabelFrame
+
 class PaperMarker:
     def __init__(self, root):
+        self.frames = {}
         self.labels = {}
-        self.chkButtons = {}
         self.buttons = {}
         self.input = {}
+
+        self.questions = []
+
+        self.currentPage = StringVar()
+        self.currentPage.set("0")
+        self.totalPage = StringVar()
+        self.totalPage.set("0")
 
         self.root = root
         self.root.state('zoomed')
         self.root.update()
-        self.content = ttk.Frame(root)
-        self.frame = ttk.Frame(self.content, borderwidth=5, relief="sunken")
-        self.buttonFrame = ttk.Frame(self.content)
 
-        self.labels["name"] = ttk.Label(self.content, text="Name")
-        self.input["name"] = ttk.Entry(self.content)
+        # Entire GUI
 
+        self.frames["main"] = Frame(root, bd=2, relief=SUNKEN)
+        self.frames["main"].pack(fill=BOTH, expand=1)
 
-        self.content.grid(column = 0, row = 0, sticky=(N, S, E, W))
-        self.frame.grid(column = 0, row = 0, columnspan = 3, rowspan = 2, sticky=(N, S, E, W))
-        self.buttonFrame.grid(column = 0, row = 2, columnspan = 3, rowspan = 2, sticky=(N, S, E, W))
+        for i in range(0, 5):
+            self.frames["main"].columnconfigure(i, weight=1)
+            self.frames["main"].rowconfigure(i, weight=1)
 
-        self.labels["name"].grid(column=3, row=0, columnspan=2, stick=(N, W), padx=5)
-        self.input["name"].grid(column=3, row=1, columnspan=2, sticky=(N, E, W), pady=5, padx=5)
+        self.frames["buttons"] = ActionFrame(self.frames["main"], 5, 0, 1, 4, (S,E,W,N))
+        self.frames["buttons"].show()
 
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        self.content.columnconfigure(0, weight=3)
-        self.content.columnconfigure(1, weight=3)
-        self.content.columnconfigure(2, weight=1)
-        self.content.columnconfigure(3, weight=1)
-        self.content.columnconfigure(4, weight=1)
-        self.content.columnconfigure(5, weight=1)
-        self.content.rowconfigure(1, weight=1)
+        self.frames["menuCalibrate"] = MenuCalibrationFrame(self.frames["main"], 0, 4, 5, 1, (S,E,W,N))
+        self.frames["menuMark"] =  MenuMarkFrame(self.frames["main"], 0, 4, 5, 1, (S,E,W,N))
 
+        self.frames["flipper"] = Navigation(self.frames["main"], 5, 4, 1, 1, (S,E,W,N))
+        self.frames["flipper"].show()
 
-    def create_button(self, title, column, row, columnspan, rowspan, padx = 0, pady = 0):
-        new_button = ttk.Button(self.buttonFrame, text=title)
-        new_button.grid(column = column, row = row, columnspan = columnspan, padx = padx, pady = pady)
-        self.buttons[title] = new_button
+        self.pageView = PageView(self.root, self.frames["main"], 0, 0, 5, 4, (S,E,W,N))
 
-    def get_canvas(self):
-        return self.canvas
+    def init_load_paper(self):
+        self.pageView.load_image()
+        self.__load_paper_pages()
+        self.__set_as_calibrate_mode()
 
-    def get_height(self):
-        return self.root.winfo_height()
+    def start_paper_crop(self):
+        self.frames['menuCalibrate'].start_paper_crop()
+        self.frames['menuCalibrate'].buttons["startMark"]['node'].config(state = DISABLED)
+        for button in self.frames['buttons'].buttons:
+            self.frames['buttons'].buttons[button]['node'].config(state = DISABLED)
+        self.pageView.start_paper_crop()
 
-    def get_width(self):
-        return self.root.winfo_width()
+    def end_paper_crop(self):
+        self.frames['menuCalibrate'].end_paper_crop()
+        self.frames['menuCalibrate'].buttons["startMark"]['node'].config(state = NORMAL)
+        for button in self.frames['buttons'].buttons:
+            self.frames['buttons'].buttons[button]['node'].config(state = NORMAL)
+        self.pageView.end_paper_crop()
+        
+    def start_region_capture(self):
+        self.frames["menuCalibrate"].start_region_capture()
+        self.pageView.start_region_capture()
 
-    def get_geometry(self):
-        return self.root.winfo_geometry()
+        self.frames['menuCalibrate'].buttons["startCropPaper"]['node'].config(state = DISABLED)
+        for button in self.frames['buttons'].buttons:
+            self.frames['buttons'].buttons[button]['node'].config(state = DISABLED)
 
+    def end_region_capture(self):
+        self.frames["menuCalibrate"].end_region_capture()
+        self.pageView.end_region_capture()
+        region = tuple(self.pageView.current_region)
+        new_question = {
+            "coord":region,
+            "question_id": "question-" + str(len(self.questions))
+        }
+        self.frames['menuCalibrate'].buttons["startCropPaper"]['node'].config(state = NORMAL)
+        self.questions.append(new_question)
+        for button in self.frames['buttons'].buttons:
+            self.frames['buttons'].buttons[button]['node'].config(state = NORMAL)
+
+    def __load_paper_pages(self):
+        self.frames["flipper"].set_current_page(self.pageView.current_page)
+        self.frames["flipper"].set_total_page(self.pageView.page_count)
+
+    def __set_as_mark_mode(self):
+        self.frames["menuCalibrate"].hide()
+        self.frames["menuMark"].show()
+
+    def __set_as_calibrate_mode(self):
+        self.frames["menuCalibrate"].show()
+        self.frames["menuMark"].hide()
 
 
 def main():
     root = Tk()
     app = PaperMarker(root)
 
-    print app.get_height()
-    print app.get_width()
-    print app.get_geometry()
-    app.create_button("test", 0, 0, 2, 2, 10, 10)
-    app.create_button("test1", 2, 0, 2, 2, 10, 10)
-    app.create_button("test2", 4, 0, 2, 2, 10, 10)
-    app.create_button("test3", 6, 0, 2, 2, 10, 10)
+    app.frames["buttons"].create_button("loadPaper", "Load New Paper",  app.init_load_paper, 10, 10)
+    #app.frames["buttons"].create_button("initMarking", "Mark Paper", 10, 10)
+
+
+    app.frames["menuCalibrate"].create_button("startCropPaper", "Crop to Questions", app.start_paper_crop, 10, 10, True)
+    app.frames["menuCalibrate"].create_button("endCropPaper", "End Crop", app.end_paper_crop, 10, 10)
+
+    app.frames["menuCalibrate"].create_button("startMark", "Start Question Capture", app.start_region_capture, 10, 10, True)
+    app.frames["menuCalibrate"].create_button("endMark", "End Question Capture",app.end_region_capture, 10, 10)
+
     root.mainloop()
 
 main()

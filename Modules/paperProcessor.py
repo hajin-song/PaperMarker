@@ -1,6 +1,8 @@
 import sys
 import ghostscript
 import cv2
+import os
+import numpy as np
 
 from Modules.TemplateMatcher import templateMatcher
 from Modules.Traverser import traverser
@@ -56,30 +58,72 @@ def __find_border(img, top_right, top_left, bottom_right, bottom_left):
         "bottom_left": bottom_left
     }
 
-def load_paper(target_pdf):
-    gs_args = ["-q", "-dNOPAUSE", "-dBATCH", "-dNOPROMPT", "-dNOSAFER", "-sDEVICE=png16m", "-sOutputFile=" + PROCESSED_IMG_PATH +"/target_img-%d.png", target_pdf]
+def load_paper(target_path, target_pdf):
+    print target_pdf
+    file_name = target_pdf.split("/")[::-1][0].split(".")[0]
+    target_directory = PROCESSED_IMG_PATH + "/" + file_name
+    if not os.path.exists(target_directory): os.mkdir(target_directory)
+
+
+    gs_args = ["-q", "-dNOPAUSE", "-dBATCH", "-dNOPROMPT", "-dNOSAFER", "-sDEVICE=png16m", "-sOutputFile=" + target_directory +"/page%d.png", target_path]
     ghostscript.Ghostscript(*gs_args)
 
-    img = cv2.imread(PROCESSED_IMG_PATH + '/target_img-1.png', 0)
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    top_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_RIGHT)
-    top_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_LEFT)
-    bottom_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_RIGHT)
-    bottom_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_LEFT)
+    images = os.listdir(target_directory)
+    images = [image for image in images if image.endswith(".png")]
+    result_image_path = []
+    print images
 
-    corner_symbols = __extract_border_marker(top_right, top_left, bottom_right, bottom_left)
+    for image in images:
+        result_image_path.append(target_directory + '/' + image)
+        img = cv2.imread(target_directory + '/' + image, 0)
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        top_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_RIGHT)
+        top_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_LEFT)
+        bottom_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_RIGHT)
+        bottom_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_LEFT)
 
-    for symbol in corner_symbols.keys():
-        coord = corner_symbols[symbol]
-        w,h = TEMPLATE[symbol].shape[::-1]
-        cv2.rectangle(img_rgb, tuple(coord), (coord[0] + w, coord[1] + h), (255,0,0), 1)
-        templateMatcher.removeDetected(img, coord[1], coord[0], w, h)
+        corner_symbols = __extract_border_marker(top_right, top_left, bottom_right, bottom_left)
+
+        for symbol in corner_symbols.keys():
+            coord = corner_symbols[symbol]
+            w,h = TEMPLATE[symbol].shape[::-1]
+            cv2.rectangle(img_rgb, tuple(coord), (coord[0] + w, coord[1] + h), (255,0,0), 1)
+            templateMatcher.removeDetected(img, coord[1], coord[0], w, h)
 
 
-    border_pos = __find_border(img, corner_symbols["top_right"], corner_symbols["top_left"], corner_symbols["bottom_right"], corner_symbols["bottom_left"])
-    for pos in border_pos:
-        coord = border_pos[pos]
-        cv2.rectangle(img_rgb, tuple(coord), (coord[0] + 1, coord[1] + 1), (0,255,0), 1)
+        border_pos = __find_border(img, corner_symbols["top_right"], corner_symbols["top_left"], corner_symbols["bottom_right"], corner_symbols["bottom_left"])
+        for pos in border_pos:
+            coord = border_pos[pos]
+            cv2.rectangle(img_rgb, tuple(coord), (coord[0] + 1, coord[1] + 1), (0,255,0), 1)
 
-    cv2.imwrite('./image_marked.png', img_rgb)
-    cv2.imwrite('./image_processed.png', img)
+        cv2.imwrite(target_directory + '/' + image, img)
+    return result_image_path
+
+def crop_page(img_name, x0, y0, x1, y1):
+    print img_name
+    try:
+        img = cv2.imread(img_name)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    except:
+        img = cv2.imread(img_name)
+    print img
+    img = np.asarray(img)
+
+    if x0 <= x1:
+        x_min = x0
+        x_max = x1
+    else:
+        x_max = x1
+        x_max = x0
+
+    if y0 <= y1:
+        y_min = y0
+        y_max = y1
+    else:
+        y_min = y1
+        y_max = y0
+
+    print x_min, y_min, x_max, y_max
+    img = img[int(y_min):int(y_max), int(x_min):int(x_max)]
+    print img
+    cv2.imwrite(img_name, img)
