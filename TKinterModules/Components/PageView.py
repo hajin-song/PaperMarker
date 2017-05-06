@@ -6,7 +6,7 @@ from tkFileDialog import askopenfilename
 
 class PageView:
     def __init__(self, root, parent, row, column, rowspan, columnspan, sticky):
-        self.root = root
+        self.root = root.root
         self.images = []
         self.current_page = 0
         self.page_count = 0
@@ -30,7 +30,7 @@ class PageView:
 
         # x_start, x_end
         self.current_region = [0, 0]
-        self.current_region_mark = []
+        self.current_region_mark = {}
 
         self.rect = None
         self.crop_x0 = 0
@@ -54,6 +54,7 @@ class PageView:
 
         self.canvas.configure(width=self.current_image.width(), height=self.current_image.height())
         self.canvas.config(scrollregion=self.canvas.bbox(ALL))
+        return FileName.split(".")[0]
 
     def start_region_capture(self):
         self.current_region = [0, 0]
@@ -62,23 +63,37 @@ class PageView:
     def end_region_capture(self):
         self.canvas.unbind( "<Button-1>")
         print self.current_region_mark
-        for index, marker in enumerate(self.current_region_mark):
-            self.canvas.delete(marker)
-        self.current_region_mark = []
+        for index, marker in enumerate(self.current_region_mark.keys()):
+            self.canvas.delete(self.current_region_mark[marker])
+        self.current_region_mark = {}
 
     def start_paper_crop(self):
+        if self.rect != None:
+            self.canvas.delete(self.rect)
+        self.rect = None
+        self.crop_x0 = 0
+        self.crop_y0 = 0
+        self.crop_x1 = 0
+        self.crop_y1 = 0
+        self.crop_view = None
+        self.move = False
+
         self.canvas.bind( "<Button-1>", self.__start_crop )
         self.canvas.bind( "<ButtonRelease-1>", self.__end_crop )
         self.canvas.bind( "<Motion>", self.__do_crop )
 
     def end_paper_crop(self):
-        if self.rect != None:
-            self.canvas.delete(self.rect)
         self.canvas.unbind( "<Button-1>")
         self.canvas.unbind( "<ButtonRelease-1>")
         self.canvas.unbind( "<Motion>")
         paperProcessor.crop_page(self.images[self.current_page-1], self.crop_x1, self.crop_y1, self.crop_x0, self.crop_y0)
         self.__load_canvas_image(self.current_page - 1)
+
+    def mark(self, page, y, visible = False):
+        if str(page)+","+str(y) in self.current_region_mark.keys():
+            self.canvas.delete(self.current_region_mark[str(page)+","+str(y)])
+        else:
+            self.current_region_mark[str(page)+","+str(y)] = self.canvas.create_line(0, y, self.current_image.width(), y, fill="red", dash=(4,4))
 
     def __load_canvas_image(self, image_index):
         self.current_image = ImageTk.PhotoImage(Image.open(self.images[image_index]))
@@ -96,9 +111,7 @@ class PageView:
         self.rect = self.canvas.create_rectangle(
             self.crop_x0, self.crop_y0, self.crop_x0, self.crop_y0, dash=(4,4))
         self.crop_view = self.canvas.find_closest(self.crop_x0, self.crop_y0, halo=2)
-        print('Rectangle {0} started at {1} {2} {3} {4} '.
-              format(self.rect, self.crop_x0, self.crop_y0, self.crop_x0,
-                     self.crop_y0))
+
 
     def __do_crop(self, event):
         if self.move:
@@ -108,7 +121,6 @@ class PageView:
             #Modify rectangle x1, y1 coordinates
             self.canvas.coords(self.crop_view, self.crop_x0, self.crop_y0,
                           self.crop_x1, self.crop_y1)
-            print('Rectangle x1, y1 = ', self.crop_x1, self.crop_y1)
 
     def __end_crop(self, event):
         self.move = False
@@ -118,17 +130,16 @@ class PageView:
         #Modify rectangle x1, y1 coordinates (final)
         self.canvas.coords(self.crop_view, self.crop_x0, self.crop_y0,
                       self.crop_x1, self.crop_y1)
-        print('Rectangle ended')
-
 
     def __record_point(self, event):
         image_x_center = self.current_image.width()/2
         image_y_center = self.current_image.height()/2
+        page_coord = (event.y, self.current_page - 1)
         if self.current_region[0] == 0:
-            self.current_region[0] = event.y
-            self.current_region_mark.append(self.canvas.create_line(0, event.y, self.current_image.width(), event.y, fill="red", dash=(4,4)))
+            self.current_region[0] = page_coord
+            self.mark(page_coord[1], page_coord[0])
         elif self.current_region[1] == 0:
-            self.current_region[1] = event.y
-            self.current_region_mark.append(self.canvas.create_line(0, event.y, self.current_image.width(), event.y, fill="red", dash=(4,4)))
+            self.current_region[1] = page_coord
+            self.mark(page_coord[1], page_coord[0])
 
         print self.current_region

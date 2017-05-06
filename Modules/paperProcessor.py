@@ -100,6 +100,7 @@ def load_paper(target_path, target_pdf):
     return result_image_path
 
 def crop_page(img_name, x0, y0, x1, y1):
+    if x0 == x1 and y0==y1: return
     print img_name
     try:
         img = cv2.imread(img_name)

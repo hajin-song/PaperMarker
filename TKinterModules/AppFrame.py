@@ -1,7 +1,8 @@
 from Tkinter import *
 
 class AppFrame:
-    def __init__(self, parent, row, column, rowspan, columnspan, sticky):
+    def __init__(self, root, parent, row, column, rowspan, columnspan, sticky, bg='green'):
+        self.root = root
         self.row = row
         self.column = column
         self.rowspan = rowspan
@@ -30,6 +31,12 @@ class AppFrame:
             pady=self.buttons[button_id]['pady'],
             side=LEFT
         )
+
+    def disable_button(self, button_id):
+        self.buttons[button_id]['node'].config(state = DISABLED)
+
+    def enable_button(self, button_id):
+        self.buttons[button_id]['node'].config(state = NORMAL)
 
     def bind_action(self, button_id, action, callback):
         self.buttons[button_id]['node'].bind(action, callback)

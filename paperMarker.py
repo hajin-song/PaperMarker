@@ -1,6 +1,7 @@
 import sys
 from Tkinter import *
 from Modules import paperProcessor
+from Modules import Calibration
 from PIL import Image, ImageTk
 from tkFileDialog import askopenfilename
 
@@ -18,22 +19,11 @@ Frame = LabelFrame
 class PaperMarker:
     def __init__(self, root):
         self.frames = {}
-        self.labels = {}
-        self.buttons = {}
-        self.input = {}
-
         self.questions = []
-
-        self.currentPage = StringVar()
-        self.currentPage.set("0")
-        self.totalPage = StringVar()
-        self.totalPage.set("0")
 
         self.root = root
         self.root.state('zoomed')
         self.root.update()
-
-        # Entire GUI
 
         self.frames["main"] = Frame(root, bd=2, relief=SUNKEN)
         self.frames["main"].pack(fill=BOTH, expand=1)
@@ -42,54 +32,59 @@ class PaperMarker:
             self.frames["main"].columnconfigure(i, weight=1)
             self.frames["main"].rowconfigure(i, weight=1)
 
-        self.frames["buttons"] = ActionFrame(self.frames["main"], 5, 0, 1, 4, (S,E,W,N))
+        self.frames["buttons"] = ActionFrame(self, self.frames["main"], 5, 0, 1, 4, (S,E,W,N))
         self.frames["buttons"].show()
 
-        self.frames["menuCalibrate"] = MenuCalibrationFrame(self.frames["main"], 0, 4, 5, 1, (S,E,W,N))
-        self.frames["menuMark"] =  MenuMarkFrame(self.frames["main"], 0, 4, 5, 1, (S,E,W,N))
+        self.frames["menuCalibrate"] = MenuCalibrationFrame(self, self.frames["main"], 0, 4, 5, 1, (S,E,W,N))
+        self.frames["menuMark"] =  MenuMarkFrame(self, self.frames["main"], 0, 4, 5, 1, (S,E,W,N))
 
-        self.frames["flipper"] = Navigation(self.frames["main"], 5, 4, 1, 1, (S,E,W,N))
+        self.frames["flipper"] = Navigation(self, self.frames["main"], 5, 4, 1, 1, (S,E,W,N))
         self.frames["flipper"].show()
 
-        self.pageView = PageView(self.root, self.frames["main"], 0, 0, 5, 4, (S,E,W,N))
+        self.pageView = PageView(self, self.frames["main"], 0, 0, 5, 4, (S,E,W,N))
 
     def init_load_paper(self):
-        self.pageView.load_image()
+        self.rootPath = self.pageView.load_image()
         self.__load_paper_pages()
         self.__set_as_calibrate_mode()
+        print self.rootPath
+
+    def get_questions(self):
+        result = self.frames["menuCalibrate"].get_questions()
+        Calibration.save_calibration(self.rootPath, result)
+        print result
+
+    def show_question_region(self, coords, visible):
+        for coord in coords:
+            self.pageView.mark(coord[1], coord[0], visible)
 
     def start_paper_crop(self):
         self.frames['menuCalibrate'].start_paper_crop()
-        self.frames['menuCalibrate'].buttons["startMark"]['node'].config(state = DISABLED)
+        self.frames['menuCalibrate'].disable_button("startMark")
         for button in self.frames['buttons'].buttons:
             self.frames['buttons'].buttons[button]['node'].config(state = DISABLED)
         self.pageView.start_paper_crop()
 
     def end_paper_crop(self):
         self.frames['menuCalibrate'].end_paper_crop()
-        self.frames['menuCalibrate'].buttons["startMark"]['node'].config(state = NORMAL)
+        self.frames['menuCalibrate'].enable_button("startMark")
         for button in self.frames['buttons'].buttons:
             self.frames['buttons'].buttons[button]['node'].config(state = NORMAL)
         self.pageView.end_paper_crop()
-        
+
     def start_region_capture(self):
         self.frames["menuCalibrate"].start_region_capture()
         self.pageView.start_region_capture()
-
-        self.frames['menuCalibrate'].buttons["startCropPaper"]['node'].config(state = DISABLED)
+        self.frames['menuCalibrate'].disable_button("startCropPaper")
         for button in self.frames['buttons'].buttons:
             self.frames['buttons'].buttons[button]['node'].config(state = DISABLED)
 
     def end_region_capture(self):
-        self.frames["menuCalibrate"].end_region_capture()
-        self.pageView.end_region_capture()
         region = tuple(self.pageView.current_region)
-        new_question = {
-            "coord":region,
-            "question_id": "question-" + str(len(self.questions))
-        }
-        self.frames['menuCalibrate'].buttons["startCropPaper"]['node'].config(state = NORMAL)
-        self.questions.append(new_question)
+        self.frames["menuCalibrate"].end_region_capture(region)
+        self.pageView.end_region_capture()
+
+        self.frames['menuCalibrate'].enable_button("startCropPaper")
         for button in self.frames['buttons'].buttons:
             self.frames['buttons'].buttons[button]['node'].config(state = NORMAL)
 
@@ -105,12 +100,12 @@ class PaperMarker:
         self.frames["menuCalibrate"].show()
         self.frames["menuMark"].hide()
 
-
 def main():
     root = Tk()
     app = PaperMarker(root)
 
     app.frames["buttons"].create_button("loadPaper", "Load New Paper",  app.init_load_paper, 10, 10)
+    app.frames["buttons"].create_button("saveExamSetting", "Export Current Setting",  app.get_questions, 10, 10)
     #app.frames["buttons"].create_button("initMarking", "Mark Paper", 10, 10)
 
 
