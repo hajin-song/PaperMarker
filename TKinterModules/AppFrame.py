@@ -1,8 +1,8 @@
 from Tkinter import *
 
 class AppFrame:
-    def __init__(self, root, parent, row, column, rowspan, columnspan, sticky, bg='green'):
-        self.root = root
+    def __init__(self, app, parent, row, column, rowspan, columnspan, sticky, bg='green'):
+        self.app = app
         self.row = row
         self.column = column
         self.rowspan = rowspan

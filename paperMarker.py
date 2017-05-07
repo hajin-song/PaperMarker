@@ -19,6 +19,7 @@ Frame = LabelFrame
 class PaperMarker:
     def __init__(self, root):
         self.frames = {}
+        self.env = {}
         self.questions = []
 
         self.root = root
@@ -44,14 +45,21 @@ class PaperMarker:
         self.pageView = PageView(self, self.frames["main"], 0, 0, 5, 4, (S,E,W,N))
 
     def init_load_paper(self):
-        self.rootPath = self.pageView.load_image()
+        self.env["EXAM_ROOT_PATH"] = self.pageView.load_image()
         self.__load_paper_pages()
         self.__set_as_calibrate_mode()
-        print self.rootPath
+
+    def next_page(self, event):
+        self.frames["flipper"].next_page()
+        self.pageView.next_page()
+
+    def prev_page(self, event):
+        self.frames["flipper"].prev_page()
+        self.pageView.prev_page()
 
     def get_questions(self):
         result = self.frames["menuCalibrate"].get_questions()
-        Calibration.save_calibration(self.rootPath, result)
+        Calibration.save_calibration(self.env["EXAM_ROOT_PATH"], result)
         print result
 
     def show_question_region(self, coords, visible):
@@ -105,15 +113,16 @@ def main():
     app = PaperMarker(root)
 
     app.frames["buttons"].create_button("loadPaper", "Load New Paper",  app.init_load_paper, 10, 10)
-    app.frames["buttons"].create_button("saveExamSetting", "Export Current Setting",  app.get_questions, 10, 10)
-    #app.frames["buttons"].create_button("initMarking", "Mark Paper", 10, 10)
 
-
+    app.frames["menuCalibrate"].create_button("saveExamSetting", "Export Current Setting",  app.get_questions, 10, 10, True)
     app.frames["menuCalibrate"].create_button("startCropPaper", "Crop to Questions", app.start_paper_crop, 10, 10, True)
     app.frames["menuCalibrate"].create_button("endCropPaper", "End Crop", app.end_paper_crop, 10, 10)
 
     app.frames["menuCalibrate"].create_button("startMark", "Start Question Capture", app.start_region_capture, 10, 10, True)
     app.frames["menuCalibrate"].create_button("endMark", "End Question Capture",app.end_region_capture, 10, 10)
+
+    app.frames["flipper"].bind_action("nextPage", "<Button-1>", app.next_page)
+    app.frames["flipper"].bind_action("prevPage", "<Button-1>", app.prev_page)
 
     root.mainloop()
 

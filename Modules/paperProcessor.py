@@ -65,37 +65,38 @@ def load_paper(target_path, target_pdf):
     if not os.path.exists(target_directory): os.mkdir(target_directory)
 
 
-    gs_args = ["-q", "-dNOPAUSE", "-dBATCH", "-dNOPROMPT", "-dNOSAFER", "-sDEVICE=png16m", "-sOutputFile=" + target_directory +"/page%d.png", target_path]
+    gs_args = ["-q", "-dNOPAUSE", "-dBATCH", "-dNOPROMPT", "-dNOSAFER", "-sDEVICE=png16m", "-sOutputFile=" + target_directory +"/%d.png", target_path]
     ghostscript.Ghostscript(*gs_args)
 
     images = os.listdir(target_directory)
     images = [image for image in images if image.endswith(".png")]
     result_image_path = []
-    print images
 
     for image in images:
         result_image_path.append(target_directory + '/' + image)
         img = cv2.imread(target_directory + '/' + image, 0)
         img_rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        top_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_RIGHT)
-        top_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_LEFT)
-        bottom_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_RIGHT)
-        bottom_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_LEFT)
+        try:
+            top_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_RIGHT)
+            top_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_TOP_LEFT)
+            bottom_right = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_RIGHT)
+            bottom_left = templateMatcher.detectSymbols(img, img_rgb, TEMPLATE_BOTTOM_LEFT)
 
-        corner_symbols = __extract_border_marker(top_right, top_left, bottom_right, bottom_left)
+            corner_symbols = __extract_border_marker(top_right, top_left, bottom_right, bottom_left)
 
-        for symbol in corner_symbols.keys():
-            coord = corner_symbols[symbol]
-            w,h = TEMPLATE[symbol].shape[::-1]
-            cv2.rectangle(img_rgb, tuple(coord), (coord[0] + w, coord[1] + h), (255,0,0), 1)
-            templateMatcher.removeDetected(img, coord[1], coord[0], w, h)
+            for symbol in corner_symbols.keys():
+                coord = corner_symbols[symbol]
+                w,h = TEMPLATE[symbol].shape[::-1]
+                cv2.rectangle(img_rgb, tuple(coord), (coord[0] + w, coord[1] + h), (255,0,0), 1)
+                templateMatcher.removeDetected(img, coord[1], coord[0], w, h)
 
 
-        border_pos = __find_border(img, corner_symbols["top_right"], corner_symbols["top_left"], corner_symbols["bottom_right"], corner_symbols["bottom_left"])
-        for pos in border_pos:
-            coord = border_pos[pos]
-            cv2.rectangle(img_rgb, tuple(coord), (coord[0] + 1, coord[1] + 1), (0,255,0), 1)
-
+            border_pos = __find_border(img, corner_symbols["top_right"], corner_symbols["top_left"], corner_symbols["bottom_right"], corner_symbols["bottom_left"])
+            for pos in border_pos:
+                coord = border_pos[pos]
+                cv2.rectangle(img_rgb, tuple(coord), (coord[0] + 1, coord[1] + 1), (0,255,0), 1)
+        except Exception:
+            continue
         cv2.imwrite(target_directory + '/' + image, img)
     return result_image_path
 

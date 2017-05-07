@@ -46,8 +46,8 @@ class PageView:
 
         FullPath = askopenfilename(parent=self.root, initialdir="C:/",title='Choose Paper')
         FileName = FullPath.split("/")[-1]
-        self.images = paperProcessor.load_paper(FullPath, FileName)
-
+        self.images = sorted(paperProcessor.load_paper(FullPath, FileName), key = lambda x:int(x.split("/")[-1].split(".")[0]))
+        print self.images
         self.__load_canvas_image(self.current_page)
         self.current_page = 1
         self.page_count = len(self.images)
@@ -81,8 +81,26 @@ class PageView:
         self.canvas.bind( "<Button-1>", self.__start_crop )
         self.canvas.bind( "<ButtonRelease-1>", self.__end_crop )
         self.canvas.bind( "<Motion>", self.__do_crop )
+        if self.rect != None:
+            self.canvas.delete(self.rect)
+        self.rect = None
+        self.crop_x0 = 0
+        self.crop_y0 = 0
+        self.crop_x1 = 0
+        self.crop_y1 = 0
+        self.crop_view = None
+        self.move = False
+
+        self.canvas.bind( "<Button-1>", self.__start_crop )
+        self.canvas.bind( "<ButtonRelease-1>", self.__end_crop )
+        self.canvas.bind( "<Motion>", self.__do_crop )
 
     def end_paper_crop(self):
+        self.canvas.unbind( "<Button-1>")
+        self.canvas.unbind( "<ButtonRelease-1>")
+        self.canvas.unbind( "<Motion>")
+        paperProcessor.crop_page(self.images[self.current_page-1], self.crop_x1, self.crop_y1, self.crop_x0, self.crop_y0)
+        self.__load_canvas_image(self.current_page - 1)
         self.canvas.unbind( "<Button-1>")
         self.canvas.unbind( "<ButtonRelease-1>")
         self.canvas.unbind( "<Motion>")
@@ -95,7 +113,25 @@ class PageView:
         else:
             self.current_region_mark[str(page)+","+str(y)] = self.canvas.create_line(0, y, self.current_image.width(), y, fill="red", dash=(4,4))
 
+    def next_page(self):
+        cur_page = int(self.current_page)
+        max_page = int(self.page_count)
+        if cur_page < max_page:
+            self.current_page += 1
+            self.__load_canvas_image(self.current_page - 1)
+
+    def prev_page(self):
+        cur_page = int(self.current_page)
+        max_page = int(self.page_count)
+        if cur_page > 1:
+            self.current_page -= 1
+            self.__load_canvas_image(self.current_page - 1)
+
     def __load_canvas_image(self, image_index):
+        print "####"
+        print self.images
+        print image_index
+        print "####"
         self.current_image = ImageTk.PhotoImage(Image.open(self.images[image_index]))
         self.root.__curImage = self.current_image
         self.canvas.create_image(0, 0, image=self.current_image, anchor=NW)

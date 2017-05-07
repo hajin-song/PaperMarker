@@ -2,8 +2,8 @@ from Tkinter import *
 from ..AppFrame import AppFrame
 
 class MenuCalibrationActions(AppFrame):
-    def __init__(self, root, parent, row, column, rowspan, columnspan, sticky):
-        AppFrame.__init__(self, root, parent, row, column, rowspan, columnspan, sticky, 'red')
+    def __init__(self, app, parent, row, column, rowspan, columnspan, sticky):
+        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky, 'red')
         Label(self.frame, text="Calibration Menu").pack(padx=5, pady=5, fill=X)
 
     def create_button(self, button_id, title, callback, padx = 0, pady = 0, Show=False):
@@ -76,7 +76,6 @@ class MenuCalibrationListItemAnnotator(Toplevel):
     def body(self, root, cur_name, cur_criterias):
         self.root = root
         self.cur_row = 0
-        print cur_name
         self.criteriaEntries = []
         Label(root, text="Question Name:").grid(row=self.cur_row)
         self.name = Entry(root)
@@ -95,9 +94,6 @@ class MenuCalibrationListItemAnnotator(Toplevel):
     #
     # command hooks
     def buttonbox(self):
-        # add standard button box. override if you don't want the
-        # standard buttons
-
         box = Frame(self)
 
         w = Button(box, text="OK", width=10, command=self.ok, default=ACTIVE)
@@ -109,6 +105,7 @@ class MenuCalibrationListItemAnnotator(Toplevel):
         self.bind("<Escape>", self.cancel)
 
         box.pack()
+
     def ok(self, event=None):
         if not self.validate():
             self.initial_focus.focus_set() # put focus back
@@ -142,29 +139,31 @@ class MenuCalibrationListItemAnnotator(Toplevel):
         self.criteriaEntries.append(crit)
 
 class MenuCalibrationListItem(AppFrame):
-    def __init__(self, root, parent, row, column, rowspan, columnspan, sticky, name, coord):
-        AppFrame.__init__(self, root, parent.frame, row, column, rowspan, columnspan, sticky, 'yellow')
-        self.parent = parent
+    def __init__(self, app, parent, row, column, rowspan, columnspan, sticky, name, coord):
+        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky, 'yellow')
         self.frame.pack(fill=X, padx=10, pady=10)
+
         self.question_name = StringVar()
         self.question_name.set(name)
+        self.visible = False
         self.identifier = name
         self.coord = coord
+        self.criterias = []
+
         Label(self.frame, textvariable=self.question_name).pack(padx=5, pady=5, side=LEFT, expand=True)
         self.buttons["Toggle"] = Button(self.frame, command=self.__toggle, text="Toggle").pack(padx=5, pady=5, side=LEFT, expand=True)
         self.buttons["Annotate"] = Button(self.frame, command=self.__annotate, text="Annotate").pack(padx=5, pady=5, side=LEFT, expand=True)
         self.buttons["Delete"] = Button(self.frame, command=self.__delete, text="Delete").pack(padx=5, pady=5, side=LEFT, expand=True)
-        self.criterias = ["dun dUn", "whee"]
-        self.annotator = MenuCalibrationListItemAnnotator(self.root.root, self.question_name.get(), self.criterias)
+        self.annotator = MenuCalibrationListItemAnnotator(self.app.root, self.question_name.get(), self.criterias)
         name, self.criterias =  self.annotator.result
         self.question_name.set(name)
-        self.visible = False
+
     def __toggle(self):
-        self.root.show_question_region(self.coord, self.visible)
+        self.app.show_question_region(self.coord, self.visible)
         self.visible = not self.visible
 
     def __annotate(self):
-        self.annotator = MenuCalibrationListItemAnnotator(self.root.root, self.question_name.get(), self.criterias)
+        self.annotator = MenuCalibrationListItemAnnotator(self.app.root, self.question_name.get(), self.criterias)
         name, self.criterias =  self.annotator.result
         self.question_name.set(name)
 
@@ -173,8 +172,8 @@ class MenuCalibrationListItem(AppFrame):
         self.parent.delete_question(self.identifier)
 
 class MenuCalibrationList(AppFrame):
-    def __init__(self, root, parent, row, column, rowspan, columnspan, sticky):
-        AppFrame.__init__(self, root, parent, row, column, rowspan, columnspan, sticky, 'yellow')
+    def __init__(self, app, parent, row, column, rowspan, columnspan, sticky):
+        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky, 'yellow')
         Label(self.frame, text="asdasd Menu").pack(padx=5, pady=5, fill=X)
         self.questions = {}
 
@@ -195,20 +194,21 @@ class MenuCalibrationList(AppFrame):
     def end_region_capture(self, region):
         self.__add_question(region)
 
-    def __add_question(self, region):
-        new_q = MenuCalibrationListItem(self.root, self, 0, 0, 0, 0, (E,W), len(self.questions) + 1, region)
-        self.questions[str(len(self.questions) + 1)] = new_q
-
     def delete_question(self, index):
         print self.questions
         self.questions.pop(str(index), None)
 
-class MenuCalibrationFrame(AppFrame):
-    def __init__(self, root, parent, row, column, rowspan, columnspan, sticky):
-        AppFrame.__init__(self, root, parent, row, column, rowspan, columnspan, sticky)
+    def __add_question(self, region):
+        new_q = MenuCalibrationListItem(self.app, self.frame, 0, 0, 0, 0, (E,W), len(self.questions) + 1, region)
+        self.questions[str(len(self.questions) + 1)] = new_q
 
-        self.actions = MenuCalibrationActions(root, self.frame, 0, 0, 1, 1, (S, N,E,W))
-        self.list = MenuCalibrationList(root, self.frame, 1, 1, 1, 1, (S,N,E,W))
+
+class MenuCalibrationFrame(AppFrame):
+    def __init__(self, app, parent, row, column, rowspan, columnspan, sticky):
+        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky)
+
+        self.actions = MenuCalibrationActions(self.app, self.frame, 0, 0, 1, 1, (S, N,E,W))
+        self.list = MenuCalibrationList(self.app, self.frame, 1, 1, 1, 1, (S,N,E,W))
 
 
     def create_button(self, button_id, title, callback, padx = 0, pady = 0, Show=False):
@@ -252,6 +252,7 @@ class MenuCalibrationFrame(AppFrame):
     def end_region_capture(self, region):
         self.actions.end_region_capture()
         self.list.end_region_capture(region)
+
     def start_paper_crop(self):
         self.actions.start_paper_crop()
 
