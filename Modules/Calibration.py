@@ -18,3 +18,19 @@ def save_calibration(file_name, questions):
                 'end': cur_q['coord'][1][0],
                 'criterias': cur_q['criterias']
             })
+
+def load_calibration(file_name):
+    result = []
+    with open(file_name) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            question = {
+                "name": row["question_name"],
+                "page_start": row["page_start"],
+                "x_start": row["start"],
+                "page_end": row["page_end"],
+                "x_end": row["end"],
+                "criterias": row["criterias"].split("/")
+            }
+            result.append(question)
+    return result

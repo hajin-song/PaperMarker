@@ -129,3 +129,28 @@ def crop_page(img_name, x0, y0, x1, y1):
     img = img[int(y_min):int(y_max), int(x_min):int(x_max)]
     print img
     cv2.imwrite(img_name, img)
+
+def clobber_image(target_directory, id, img_one, x_one, img_two, x_two):
+    crop_dir = target_directory + "/" + "questions"
+    if not os.path.exists(crop_dir): os.mkdir(crop_dir)
+
+    img_one = target_directory + "/" + str(int(img_one)+1) + ".png"
+    img_two = target_directory + "/" + str(int(img_two)+1) + ".png"
+    try:
+        img_one_np = cv2.imread(img_one)
+        img_one_np = cv2.cvtColor(img_one_np, cv2.COLOR_BGR2GRAY)
+        img_two_np = cv2.imread(img_two)
+        img_two_np = cv2.cvtColor(img_two_np, cv2.COLOR_BGR2GRAY)
+    except:
+        img_one_np = cv2.imread(img_one)
+        img_two_np = cv2.imread(img_two)
+    w,h = img_one_np.shape[::-1]
+
+    if img_one == img_two:
+        cv2.imwrite(crop_dir+"/"+str(id)+".png", img_one_np[int(x_one):int(x_two), :])
+        return img_one_np[int(x_one):int(x_two), :]
+    else:
+        img_one_np[int(x_one):, :]
+        img_two_np[:int(x_two), :]
+        cv2.imwrite(crop_dir+"/"+str(id)+".png", img_one_np[int(x_one):int(x_two), :])
+        return np.concatenate((img_one_np, img_two_np), axis=1)

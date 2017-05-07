@@ -13,13 +13,13 @@ An easier process
 
 - [ ] The program can convert a PDF to a new PDF n tests, with calibration marks, unique page id, Optional student number bubbles on the first page
 - [ ] Calibrate a number of pages and read their unique id
-- [ ] Easily view and flip through calibrations
-- [ ] Edit calibration and Id as needed
-- [ ] Define question locations some form of Click / Click & Drag
-- [ ] Display any question
+- [x] Easily view and flip through calibrations
+- [x] Edit calibration and Id as needed
+- [x] Define question locations some form of Click / Click & Drag
+- [x] Display any question
 - [ ] Sort by question, test and random
-- [ ] Add and edit question marking rules
-- [ ] Assign marks with a key press or clicking
+- [x] Add and edit question marking rules
+- [x] Assign marks with a key press or clicking
 - [ ] Save and load progress
 - [ ] Output values as csv or Spreadsheet
 - [ ] Read student number bubbles

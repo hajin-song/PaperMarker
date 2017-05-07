@@ -1,7 +1,7 @@
 from Tkinter import *
 
 class AppFrame:
-    def __init__(self, app, parent, row, column, rowspan, columnspan, sticky, bg='green'):
+    def __init__(self, app, parent, row, column, rowspan, columnspan, sticky,):
         self.app = app
         self.row = row
         self.column = column
@@ -12,7 +12,7 @@ class AppFrame:
         self.buttons = {}
 
         self.parent = parent
-        self.frame = Frame(self.parent, bd=2, relief = RAISED, bg="green")
+        self.frame = Frame(self.parent, bd=2, relief = RAISED)
 
     def show(self):
         self.frame.grid(column=self.column, row=self.row, rowspan=self.rowspan, columnspan=self.columnspan, sticky=self.sticky)

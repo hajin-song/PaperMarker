@@ -45,18 +45,30 @@ class PaperMarker:
         self.pageView = PageView(self, self.frames["main"], 0, 0, 5, 4, (S,E,W,N))
 
     def init_load_paper(self):
-        self.env["EXAM_ROOT_PATH"] = self.pageView.load_image()
+        self.env["EXAM_ROOT_PATH"] = self.pageView.init_load_paper()
         self.__load_paper_pages()
         self.__set_as_calibrate_mode()
+
+    def init_mark_paper(self):
+        self.env["CALIBRATION_FILE"] = askopenfilename()
+        self.env["EXAM_ROOT_PATH"] = "/".join(self.env["CALIBRATION_FILE"].split("/")[:-1])
+        self.env["CALIBRATION_DATA"] = Calibration.load_calibration(self.env["CALIBRATION_FILE"])
+
+        self.pageView.init_mark_paper(self.env["EXAM_ROOT_PATH"], self.env["CALIBRATION_DATA"])
+        self.frames["menuMark"].init_mark_paper(self.env["CALIBRATION_DATA"]);
+        self.__load_paper_pages()
+        self.__set_as_mark_mode()
 
     def next_page(self, event):
         self.frames["flipper"].next_page()
         self.pageView.next_page()
+        self.frames["menuMark"].next_page()
 
     def prev_page(self, event):
         self.frames["flipper"].prev_page()
         self.pageView.prev_page()
-
+        self.frames["menuMark"].prev_page()
+        
     def get_questions(self):
         result = self.frames["menuCalibrate"].get_questions()
         Calibration.save_calibration(self.env["EXAM_ROOT_PATH"], result)
@@ -88,7 +100,7 @@ class PaperMarker:
             self.frames['buttons'].buttons[button]['node'].config(state = DISABLED)
 
     def end_region_capture(self):
-        region = tuple(self.pageView.current_region)
+        region = tuple(self.pageView.coordCurrentRegion)
         self.frames["menuCalibrate"].end_region_capture(region)
         self.pageView.end_region_capture()
 
@@ -97,8 +109,8 @@ class PaperMarker:
             self.frames['buttons'].buttons[button]['node'].config(state = NORMAL)
 
     def __load_paper_pages(self):
-        self.frames["flipper"].set_current_page(self.pageView.current_page)
-        self.frames["flipper"].set_total_page(self.pageView.page_count)
+        self.frames["flipper"].set_current_page(1)
+        self.frames["flipper"].set_total_page(int(self.pageView.strTotalPage.get()))
 
     def __set_as_mark_mode(self):
         self.frames["menuCalibrate"].hide()
@@ -113,6 +125,7 @@ def main():
     app = PaperMarker(root)
 
     app.frames["buttons"].create_button("loadPaper", "Load New Paper",  app.init_load_paper, 10, 10)
+    app.frames["buttons"].create_button("markPaper", "Mark Papers",  app.init_mark_paper, 10, 10)
 
     app.frames["menuCalibrate"].create_button("saveExamSetting", "Export Current Setting",  app.get_questions, 10, 10, True)
     app.frames["menuCalibrate"].create_button("startCropPaper", "Crop to Questions", app.start_paper_crop, 10, 10, True)

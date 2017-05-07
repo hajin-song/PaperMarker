@@ -3,7 +3,7 @@ from ..AppFrame import AppFrame
 
 class MenuCalibrationActions(AppFrame):
     def __init__(self, app, parent, row, column, rowspan, columnspan, sticky):
-        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky, 'red')
+        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky)
         Label(self.frame, text="Calibration Menu").pack(padx=5, pady=5, fill=X)
 
     def create_button(self, button_id, title, callback, padx = 0, pady = 0, Show=False):
@@ -87,9 +87,12 @@ class MenuCalibrationListItemAnnotator(Toplevel):
             self.cur_row += 1
             Label(root, text="Criteria " + str(self.cur_row)).grid(row=self.cur_row)
             crit = Entry(root)
-            crit.insert(10, criteria)
-            crit.grid(row=self.cur_row, column=1)
-            self.criteriaEntries.append(crit)
+            crit.insert(10, criteria[0])
+            crit.grid(row=self.cur_row, column=1, padx=5, pady=5)
+            crit_weight = Entry(root)
+            crit_weight.insert(10, criteria[1])
+            crit_weight.grid(row=self.cur_row, column=2 , padx=5, pady=5)
+            self.criteriaEntries.append((crit, crit_weight))
         return self.name # initial focus
     #
     # command hooks
@@ -127,7 +130,7 @@ class MenuCalibrationListItemAnnotator(Toplevel):
         name = self.name.get()
         criterias = []
         for criteria in self.criteriaEntries:
-            criterias.append(criteria.get())
+            criterias.append((criteria[0].get(), criteria[1].get()))
         self.result = name, criterias
 
     def __add_field(self):
@@ -135,12 +138,15 @@ class MenuCalibrationListItemAnnotator(Toplevel):
         Label(self.root, text="Criteria " + str(self.cur_row)).grid(row=self.cur_row)
         crit = Entry(self.root)
         crit.insert(10, "")
-        crit.grid(row=self.cur_row, column=1)
-        self.criteriaEntries.append(crit)
+        crit.grid(row=self.cur_row, column=1, padx=5, pady=5)
+        crit_weight = Entry(self.root)
+        crit_weight.insert(10, "")
+        crit_weight.grid(row=self.cur_row, column=2, padx=5, pady=5)
+        self.criteriaEntries.append((crit,crit_weight))
 
 class MenuCalibrationListItem(AppFrame):
     def __init__(self, app, parent, row, column, rowspan, columnspan, sticky, name, coord):
-        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky, 'yellow')
+        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky)
         self.frame.pack(fill=X, padx=10, pady=10)
 
         self.question_name = StringVar()
@@ -151,7 +157,6 @@ class MenuCalibrationListItem(AppFrame):
         self.criterias = []
 
         Label(self.frame, textvariable=self.question_name).pack(padx=5, pady=5, side=LEFT, expand=True)
-        self.buttons["Toggle"] = Button(self.frame, command=self.__toggle, text="Toggle").pack(padx=5, pady=5, side=LEFT, expand=True)
         self.buttons["Annotate"] = Button(self.frame, command=self.__annotate, text="Annotate").pack(padx=5, pady=5, side=LEFT, expand=True)
         self.buttons["Delete"] = Button(self.frame, command=self.__delete, text="Delete").pack(padx=5, pady=5, side=LEFT, expand=True)
         self.annotator = MenuCalibrationListItemAnnotator(self.app.root, self.question_name.get(), self.criterias)
@@ -173,8 +178,8 @@ class MenuCalibrationListItem(AppFrame):
 
 class MenuCalibrationList(AppFrame):
     def __init__(self, app, parent, row, column, rowspan, columnspan, sticky):
-        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky, 'yellow')
-        Label(self.frame, text="asdasd Menu").pack(padx=5, pady=5, fill=X)
+        AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky)
+        Label(self.frame, text="Captured Questions").pack(padx=5, pady=5, fill=X)
         self.questions = {}
 
     def create_button(self, button_id, title, callback, padx = 0, pady = 0, Show=False):
@@ -202,14 +207,12 @@ class MenuCalibrationList(AppFrame):
         new_q = MenuCalibrationListItem(self.app, self.frame, 0, 0, 0, 0, (E,W), len(self.questions) + 1, region)
         self.questions[str(len(self.questions) + 1)] = new_q
 
-
 class MenuCalibrationFrame(AppFrame):
     def __init__(self, app, parent, row, column, rowspan, columnspan, sticky):
         AppFrame.__init__(self, app, parent, row, column, rowspan, columnspan, sticky)
 
         self.actions = MenuCalibrationActions(self.app, self.frame, 0, 0, 1, 1, (S, N,E,W))
         self.list = MenuCalibrationList(self.app, self.frame, 1, 1, 1, 1, (S,N,E,W))
-
 
     def create_button(self, button_id, title, callback, padx = 0, pady = 0, Show=False):
         self.actions.buttons[button_id] = {
@@ -234,9 +237,10 @@ class MenuCalibrationFrame(AppFrame):
         result = {}
         for q in qs:
             cur_q = qs[q]
+            cur_criteria = "/".join([ ":".join(criteria) for criteria in cur_q.criterias])
             result[cur_q.question_name.get()] = {
                 "coord": cur_q.coord,
-                "criterias": ",".join(cur_q.criterias)
+                "criterias":cur_criteria
             }
         return result
 
